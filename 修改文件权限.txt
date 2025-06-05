@@ -1,0 +1,2 @@
+icacls D:\work\other_project\mygithub\GroupSettingWidget /reset /T
+icacls D:\work\other_project\mygithub\GroupSettingWidget /grant %USERNAME%:F /T

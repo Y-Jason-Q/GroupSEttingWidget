@@ -1,0 +1,34 @@
+<RCC>
+    <qresource prefix="/">
+        <file>images/device_connect.png</file>
+        <file>images/device_connecting.png</file>
+        <file>images/device_disconnect.png</file>
+        <file>images/device_small.png</file>
+        <file>images/layout_double.png</file>
+        <file>images/layout_eghit.png</file>
+        <file>images/layout_four.png</file>
+        <file>images/layout_nine.png</file>
+        <file>images/layout_single.png</file>
+        <file>images/localhost.png</file>
+        <file>images/network.png</file>
+        <file>images/refresh.png</file>
+        <file>qss/resource.qss</file>
+        <file>images/waiting.png</file>
+        <file>images/close.png</file>
+        <file>images/max.png</file>
+        <file>images/min.png</file>
+        <file>images/restore.png</file>
+        <file>images/device_disconnect2.png</file>
+        <file>images/devlist_btn.png</file>
+        <file>images/layout_btn.png</file>
+        <file>images/layout_six.png</file>
+        <file>images/fullscreen_btn.png</file>
+        <file>images/restorescreen_btn.png</file>
+        <file>app.ico</file>
+        <file>images/setting_btn.png</file>
+        <file>images/back_btn.png</file>
+        <file>images/checkbtn_checked.png</file>
+        <file>images/checkbtn_uncheck.png</file>
+        <file>images/delete_btn.png</file>
+    </qresource>
+</RCC>
