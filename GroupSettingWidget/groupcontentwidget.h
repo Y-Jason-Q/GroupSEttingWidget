@@ -12,9 +12,16 @@ public:
 
     void setGroupId(int groupId);
 
+private:
+    void refreshLists();
+
+private slots:
+    void onAddMembers();
+    void onRemoveMembers();
+
 signals:
-    void removeMembersFromGroup(const QSet<int>& memberIds);
-    void addMembersToGroup(const QSet<int>& memberIds);
+    void addMembersToGroup(const QSet<int>& memberIds, int groupId);
+    void removeMembersFromGroup(const QSet<int>& memberIds, int groupId);
 
 private:
     int m_groupId = DataManager::UNGROUPED_ID;

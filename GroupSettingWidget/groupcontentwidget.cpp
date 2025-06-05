@@ -20,37 +20,51 @@ GroupContentWidget::GroupContentWidget(QWidget *parent)
     layout->addWidget(m_unGroupList);
     setLayout(layout);
 
-    connect(m_groupList, &GroupListWidget::buttonClicked, [this](){
-        emit removeMembersFromGroup(m_groupList->checkedIds());
-    });
-    connect(m_unGroupList, &GroupListWidget::buttonClicked, [this](){
-        emit addMembersToGroup(m_unGroupList->checkedIds());
-    });
+//    connect(m_groupList, &GroupListWidget::buttonClicked, [this](){
+//        emit removeMembersFromGroup(m_groupList->checkedIds());
+//    });
+//    connect(m_unGroupList, &GroupListWidget::buttonClicked, [this](){
+//        emit addMembersToGroup(m_unGroupList->checkedIds());
+//    });
 
-    connect(&DataManager::instance(), &DataManager::dataChanged, [this]{
-        setGroupId(m_groupId);
-    });
+//    connect(&DataManager::instance(), &DataManager::dataChanged, [this]{
+//        setGroupId(m_groupId);
+//    });
+
+    connect(m_groupList, &GroupListWidget::buttonClicked, this, &GroupContentWidget::onRemoveMembers);
+    connect(m_unGroupList, &GroupListWidget::buttonClicked, this, &GroupContentWidget::onAddMembers);
+    connect(&DataManager::instance(), &DataManager::dataChanged, this, &GroupContentWidget::refreshLists);
 }
 
 void GroupContentWidget::setGroupId(int groupId)
 {
     m_groupId = groupId;
-    auto& mgr = DataManager::instance();
+    refreshLists();
+}
 
-    if (groupId == DataManager::UNGROUPED_ID) {
-        // 只显示未分组成员列表
-        QVector<MemberInfo> ungroupList = mgr.ungroupedMembers();
-        m_unGroupList->setMembers(ungroupList);
-        // 判断是否显示
-        m_unGroupList->setVisible(!ungroupList.isEmpty());
-        m_groupList->setVisible(false);
-    } else {
-        QVector<MemberInfo> groupList = mgr.groupMembers(groupId);
-        QVector<MemberInfo> ungroupList = mgr.ungroupedMembers();
-        m_groupList->setMembers(groupList);
-        m_unGroupList->setMembers(ungroupList);
-        // 判断是否显示
-        m_groupList->setVisible(!groupList.isEmpty());
-        m_unGroupList->setVisible(!ungroupList.isEmpty());
-    }
+void GroupContentWidget::refreshLists()
+{
+    auto& mgr = DataManager::instance();
+    QVector<MemberInfo> groupList = mgr.groupMembers(m_groupId);
+    QVector<MemberInfo> ungroupList = mgr.ungroupedMembers();
+
+    m_groupList->setMembers(groupList);
+    m_unGroupList->setMembers(ungroupList);
+
+    m_groupList->setVisible(m_groupId != DataManager::UNGROUPED_ID && !groupList.isEmpty());
+    m_unGroupList->setVisible(!ungroupList.isEmpty());
+}
+
+void GroupContentWidget::onAddMembers()
+{
+    QSet<int> ids = m_unGroupList->checkedIds();
+    if (!ids.isEmpty())
+        emit addMembersToGroup(ids, m_groupId);
+}
+
+void GroupContentWidget::onRemoveMembers()
+{
+    QSet<int> ids = m_groupList->checkedIds();
+    if (!ids.isEmpty())
+        emit removeMembersFromGroup(ids, m_groupId);
 }

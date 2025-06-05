@@ -21,7 +21,12 @@ DataManager::DataManager(QObject *parent)
 QVector<GroupInfo> DataManager::groups() const
 {
     QReadLocker locker(&m_lock);
-    return m_groups;
+    QVector<GroupInfo> validGroups;
+    for (const auto &g : m_groups) {
+        if (!g.name.trimmed().isEmpty())
+            validGroups.push_back(g);
+    }
+    return validGroups;
 }
 
 int DataManager::addGroup(const QString &name)
@@ -40,9 +45,9 @@ int DataManager::addGroup(const QString &name)
 
 void DataManager::removeGroup(int groupId)
 {
+    if (groupId == UNGROUPED_ID) return;
     {
         QWriteLocker locker(&m_lock);
-        if (groupId == UNGROUPED_ID) return;
         auto it = std::remove_if(m_groups.begin(), m_groups.end(),
                                  [groupId](const GroupInfo& g) { return g.id == groupId; });
         m_groups.erase(it, m_groups.end());
@@ -77,18 +82,26 @@ QVector<MemberInfo> DataManager::members() const
 
 int DataManager::addMember(const QString& name)
 {
-    QWriteLocker locker(&m_lock);
-    MemberInfo m{m_nextMemberId++, name, UNGROUPED_ID};
-    m_members.append(m);
+    if (name.trimmed().isEmpty()) return -1;
+    int id;
+    {
+        QWriteLocker locker(&m_lock);
+        MemberInfo m{m_nextMemberId++, name, UNGROUPED_ID};
+        m_members.append(m);
+        id = m.id;
+    }
     emit dataChanged();
-    return m.id;
+    return id;
 }
 
-void DataManager::removeMember(int memberId) {
-    QWriteLocker locker(&m_lock);
-    auto it = std::remove_if(m_members.begin(), m_members.end(),
-                             [memberId](const MemberInfo& m) { return m.id == memberId; });
-    m_members.erase(it, m_members.end());
+void DataManager::removeMember(int memberId)
+{
+    {
+        QWriteLocker locker(&m_lock);
+        auto it = std::remove_if(m_members.begin(), m_members.end(),
+                                 [memberId](const MemberInfo& m) { return m.id == memberId; });
+        m_members.erase(it, m_members.end());
+    }
     emit dataChanged();
 }
 
@@ -112,25 +125,32 @@ void DataManager::assignMemberToGroup(int memberId, int groupId)
 {
     if (groupId == UNGROUPED_ID) return;
     QWriteLocker locker(&m_lock);
+    auto grpIt = std::find_if(m_groups.begin(), m_groups.end(), [groupId](const GroupInfo& g) {
+        return g.id == groupId;
+    });
+    if (grpIt == m_groups.end()) return;
+
     for (auto& m : m_members) {
         if (m.id == memberId) {
             m.groupId = groupId;
-            break;
+            emit dataChanged();
+            return;
         }
     }
-    emit dataChanged();
+//    emit dataChanged();
 }
 
 void DataManager::removeMemberFromGroup(int memberId)
 {
     QWriteLocker locker(&m_lock);
     for (auto& m : m_members) {
-        if (m.id == memberId) {
+        if (m.id == memberId && m.groupId != UNGROUPED_ID) {
             m.groupId = UNGROUPED_ID;
+            emit dataChanged();
             break;
         }
     }
-    emit dataChanged();
+//    emit dataChanged();
 }
 
 MemberInfo DataManager::memberInfo(int memberId) const

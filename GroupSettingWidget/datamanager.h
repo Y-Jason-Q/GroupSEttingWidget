@@ -42,8 +42,8 @@ public:
     void removeMemberFromGroup(int memberId);    // 移除成员分组归属（变为未分组）
 
     // 分组成员接口
-    QVector<MemberInfo> ungroupedMembers() const;         // 未分组成员
     QVector<MemberInfo> groupMembers(int groupId) const;  // 某分组成员
+    QVector<MemberInfo> ungroupedMembers() const;         // 未分组成员
 
     // 查询id查找
     MemberInfo memberInfo(int memberId) const;
