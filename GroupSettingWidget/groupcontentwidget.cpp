@@ -39,24 +39,16 @@ void GroupContentWidget::setGroupId(int groupId)
 
     if (groupId == DataManager::UNGROUPED_ID) {
         // 只显示未分组成员列表
-        QVector<MemberInfo> ungroupList;
-        for (int id : mgr.ungroupedMemberIds())
-            ungroupList.push_back(mgr.memberInfo(id));
+        QVector<MemberInfo> ungroupList = mgr.ungroupedMembers();
         m_unGroupList->setMembers(ungroupList);
-
         // 判断是否显示
         m_unGroupList->setVisible(!ungroupList.isEmpty());
         m_groupList->setVisible(false);
     } else {
-        QVector<MemberInfo> groupList, ungroupList;
-        for (int id : mgr.groupMemberIds(groupId))
-            groupList.push_back(mgr.memberInfo(id));
-        for (int id : mgr.ungroupedMemberIds())
-            ungroupList.push_back(mgr.memberInfo(id));
-
+        QVector<MemberInfo> groupList = mgr.groupMembers(groupId);
+        QVector<MemberInfo> ungroupList = mgr.ungroupedMembers();
         m_groupList->setMembers(groupList);
         m_unGroupList->setMembers(ungroupList);
-
         // 判断是否显示
         m_groupList->setVisible(!groupList.isEmpty());
         m_unGroupList->setVisible(!ungroupList.isEmpty());

@@ -38,13 +38,12 @@ public:
     int addMember(const QString &name);
     void removeMember(int memberId);
 
-    // 分配成员到分组
-    QSet<int> groupMemberIds(int groupId) const;            // 某分组下成员ID集合
-    void assignMemberToGroup(int memberId, int groupId);    // 把成员分到分组（自动移出其它分组）
-    void removeMemberFromGroup(int member, int groupId);    // 从分组移除成员
+    void assignMemberToGroup(int memberId, int groupId);    // 分配成员到分组
+    void removeMemberFromGroup(int memberId);    // 移除成员分组归属（变为未分组）
 
-    // 查询未分组成员
-    QSet<int> ungroupedMemberIds() const;
+    // 分组成员接口
+    QVector<MemberInfo> ungroupedMembers() const;         // 未分组成员
+    QVector<MemberInfo> groupMembers(int groupId) const;  // 某分组成员
 
     // 查询id查找
     MemberInfo memberInfo(int memberId) const;
@@ -65,7 +64,7 @@ private:
     mutable QReadWriteLock m_lock;
     QVector<GroupInfo> m_groups;
     QVector<MemberInfo> m_members;
-    QMap<int, QSet<int>> m_groupMembers; // groupId -> memberIds
+//    QMap<int, QSet<int>> m_groupMembers; // groupId -> memberIds
     int m_nextGroupId;
     int m_nextMemberId;
 };

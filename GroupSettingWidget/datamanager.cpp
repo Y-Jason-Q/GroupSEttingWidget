@@ -8,21 +8,14 @@ DataManager &DataManager::instance()
 
 DataManager::DataManager(QObject *parent)
     : QObject{parent}
+    , m_nextGroupId(1)
+    , m_nextMemberId(1)
 {
     // 添加未分组，id 固定为 UNGROUPED_ID
     GroupInfo ungrouped;
     ungrouped.id = UNGROUPED_ID;
     ungrouped.name = QStringLiteral("未分组");
     m_groups << ungrouped;
-
-    // 示例数据：可移除
-    int mid1 = addMember(QStringLiteral("用户A"));
-    int mid2 = addMember(QStringLiteral("用户B"));
-    int mid3 = addMember(QStringLiteral("用户C"));
-    int gid1 = addGroup(QStringLiteral("分组一"));
-    int gid2 = addGroup(QStringLiteral("分组二"));
-    assignMemberToGroup(mid1, gid1);
-    assignMemberToGroup(mid2, gid2);
 }
 
 QVector<GroupInfo> DataManager::groups() const
@@ -33,6 +26,7 @@ QVector<GroupInfo> DataManager::groups() const
 
 int DataManager::addGroup(const QString &name)
 {
+    if (name.trimmed().isEmpty()) return -1;
     int id;
     {
         QWriteLocker locker(&m_lock);
@@ -46,19 +40,17 @@ int DataManager::addGroup(const QString &name)
 
 void DataManager::removeGroup(int groupId)
 {
-    QWriteLocker locker(&m_lock);
-    if (groupId == UNGROUPED_ID) return; // “未分组”不允许删除
-    auto it = std::remove_if(m_groups.begin(), m_groups.end(),
-                             [groupId](const GroupInfo& g) { return g.id == groupId; });
-    m_groups.erase(it, m_groups.end());
-    // 分组成员挪回未分组
-    if (m_groupMembers.contains(groupId)) {
-        QSet<int> ids = m_groupMembers[groupId];
-        for (int mid : ids) {
-            m_groupMembers[UNGROUPED_ID].insert(mid);
+    {
+        QWriteLocker locker(&m_lock);
+        if (groupId == UNGROUPED_ID) return;
+        auto it = std::remove_if(m_groups.begin(), m_groups.end(),
+                                 [groupId](const GroupInfo& g) { return g.id == groupId; });
+        m_groups.erase(it, m_groups.end());
+        for (auto& m : m_members) {
+            if (m.groupId == groupId)
+                m.groupId = UNGROUPED_ID;
         }
-        m_groupMembers.remove(groupId);
-    }
+    } // 锁作用域结束
     emit dataChanged();
 }
 
@@ -86,9 +78,8 @@ QVector<MemberInfo> DataManager::members() const
 int DataManager::addMember(const QString& name)
 {
     QWriteLocker locker(&m_lock);
-    MemberInfo m{m_nextMemberId++, name};
+    MemberInfo m{m_nextMemberId++, name, UNGROUPED_ID};
     m_members.append(m);
-    m_groupMembers[UNGROUPED_ID].insert(m.id);
     emit dataChanged();
     return m.id;
 }
@@ -98,45 +89,48 @@ void DataManager::removeMember(int memberId) {
     auto it = std::remove_if(m_members.begin(), m_members.end(),
                              [memberId](const MemberInfo& m) { return m.id == memberId; });
     m_members.erase(it, m_members.end());
-
-    for (auto& ids : m_groupMembers) {
-        ids.remove(memberId);
-    }
     emit dataChanged();
 }
 
-QSet<int> DataManager::groupMemberIds(int groupId) const
+QVector<MemberInfo> DataManager::groupMembers(int groupId) const
 {
     QReadLocker locker(&m_lock);
-    return m_groupMembers.value(groupId, {});
+    QVector<MemberInfo> result;
+    for (const auto& m : m_members) {
+        if (m.groupId == groupId)
+            result.append(m);
+    }
+    return result;
+}
+
+QVector<MemberInfo> DataManager::ungroupedMembers() const
+{
+    return groupMembers(UNGROUPED_ID);
 }
 
 void DataManager::assignMemberToGroup(int memberId, int groupId)
 {
-    if (groupId == UNGROUPED_ID) return; // 不能手动分配回未分组
+    if (groupId == UNGROUPED_ID) return;
     QWriteLocker locker(&m_lock);
-    // 先从所有分组移除（保证唯一归属）
-    for (auto& ids : m_groupMembers) {
-        ids.remove(memberId);
+    for (auto& m : m_members) {
+        if (m.id == memberId) {
+            m.groupId = groupId;
+            break;
+        }
     }
-    // 添加到指定分组
-    m_groupMembers[groupId].insert(memberId);
     emit dataChanged();
 }
 
-void DataManager::removeMemberFromGroup(int memberId, int groupId)
+void DataManager::removeMemberFromGroup(int memberId)
 {
-    if (groupId == UNGROUPED_ID) return; // 未分组不能移除成员
     QWriteLocker locker(&m_lock);
-    m_groupMembers[groupId].remove(memberId);
-    m_groupMembers[UNGROUPED_ID].insert(memberId);
+    for (auto& m : m_members) {
+        if (m.id == memberId) {
+            m.groupId = UNGROUPED_ID;
+            break;
+        }
+    }
     emit dataChanged();
-}
-
-QSet<int> DataManager::ungroupedMemberIds() const
-{
-    QReadLocker locker(&m_lock);
-    return m_groupMembers.value(UNGROUPED_ID, {});
 }
 
 MemberInfo DataManager::memberInfo(int memberId) const
@@ -162,10 +156,11 @@ GroupInfo DataManager::groupInfo(int groupId) const
 // 分组/未分组成员数量统计
 int DataManager::groupMemberCount(int groupId) const
 {
-    return groupMemberIds(groupId).size();
+    return groupMembers(groupId).size();
 }
+
 int DataManager::ungroupMemberCount() const
 {
-    return ungroupedMemberIds().size();
+    return ungroupedMembers().size();
 }
 
