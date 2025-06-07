@@ -1,5 +1,6 @@
 ﻿#include "groupcontentwidget.h"
-#include "DataManager.h"
+//#include "DataManager.h"
+#include "../../DataManager/datamanager.h"
 #include <QVBoxLayout>
 
 GroupContentWidget::GroupContentWidget(QWidget *parent)
@@ -20,20 +21,11 @@ GroupContentWidget::GroupContentWidget(QWidget *parent)
     layout->addWidget(m_unGroupList);
     setLayout(layout);
 
-//    connect(m_groupList, &GroupListWidget::buttonClicked, [this](){
-//        emit removeMembersFromGroup(m_groupList->checkedIds());
-//    });
-//    connect(m_unGroupList, &GroupListWidget::buttonClicked, [this](){
-//        emit addMembersToGroup(m_unGroupList->checkedIds());
-//    });
+    connect(m_groupList, &GroupListWidget::buttonClicked, this, &GroupContentWidget::onRemoveMembers, Qt::UniqueConnection);
+    connect(m_unGroupList, &GroupListWidget::buttonClicked, this, &GroupContentWidget::onAddMembers, Qt::UniqueConnection);
+    connect(&DataManager::instance(), &DataManager::dataChanged, this, &GroupContentWidget::refreshLists, Qt::UniqueConnection);
 
-//    connect(&DataManager::instance(), &DataManager::dataChanged, [this]{
-//        setGroupId(m_groupId);
-//    });
-
-    connect(m_groupList, &GroupListWidget::buttonClicked, this, &GroupContentWidget::onRemoveMembers);
-    connect(m_unGroupList, &GroupListWidget::buttonClicked, this, &GroupContentWidget::onAddMembers);
-    connect(&DataManager::instance(), &DataManager::dataChanged, this, &GroupContentWidget::refreshLists);
+    this->setStyleSheet("background-color: #282828;");
 }
 
 void GroupContentWidget::setGroupId(int groupId)
@@ -53,6 +45,12 @@ void GroupContentWidget::refreshLists()
 
     m_groupList->setVisible(m_groupId != DataManager::UNGROUPED_ID && !groupList.isEmpty());
     m_unGroupList->setVisible(!ungroupList.isEmpty());
+
+    if (m_groupId == DataManager::UNGROUPED_ID) {
+        m_unGroupList->setButtonVisible(false);
+    } else {
+        m_unGroupList->setButtonVisible(true);
+    }
 }
 
 void GroupContentWidget::onAddMembers()

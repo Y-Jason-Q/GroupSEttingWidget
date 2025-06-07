@@ -2,8 +2,11 @@
 #define GROUPNAVMODEL_H
 
 #include <QAbstractListModel>
-#include "datamanager.h"
+#include "../../DataManager/datamanager.h"
 
+/*!
+ * \brief 导航栏分组列表模型
+ */
 class GroupNavModel : public QAbstractListModel
 {
     Q_OBJECT
@@ -19,7 +22,6 @@ public slots:
 
 private:
     QVector<GroupInfo> m_groups;
-    QVector<int> m_memberCounts;
 };
 
 #endif // GROUPNAVMODEL_H

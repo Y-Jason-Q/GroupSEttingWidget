@@ -21,6 +21,8 @@ public:
     QSet<int> checkedIds() const;
     void hideIfEmpty(bool hide = true);
 
+    void setButtonVisible(bool visible);
+
 signals:
     void buttonClicked();
     void checkedItemsChanged();

@@ -37,7 +37,7 @@ GroupListWidget::GroupListWidget(QWidget *parent)
 
     m_label->setStyleSheet("background-color: transparent; color: #FFFFFF; font-size: 18px;");
     m_btn->setStyleSheet("background-color: #3D8BFF; color: #FFFFFF; font-size: 18px; border-radius: 16px;");
-
+    this->setStyleSheet("background-color: transparent;");
 
     connect(m_btn, &QPushButton::clicked, this, &GroupListWidget::buttonClicked);
     connect(m_model, &GroupListModel::checkedItemsChanged, this, &GroupListWidget::checkedItemsChanged);
@@ -66,4 +66,9 @@ QSet<int> GroupListWidget::checkedIds() const
 void GroupListWidget::hideIfEmpty(bool hide)
 {
     setVisible(!hide || m_model->rowCount() > 0);
+}
+
+void GroupListWidget::setButtonVisible(bool visible)
+{
+    m_btn->setVisible(visible);
 }

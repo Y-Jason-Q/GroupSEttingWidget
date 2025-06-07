@@ -1,5 +1,5 @@
 ﻿#include "groupsettingwidget.h"
-#include "DataManager.h"
+#include "../../DataManager/datamanager.h"
 #include <QHBoxLayout>
 #include <QInputDialog>
 #include <QMessageBox>
@@ -17,11 +17,12 @@ GroupSettingWidget::GroupSettingWidget(QWidget *parent)
     layout->addWidget(m_content, 4);
     setLayout(layout);
 
-    connect(m_nav, &GroupNavWidget::groupSelected, [this](int groupId){
+    connect(m_nav, &GroupNavWidget::groupSelected, this, [this](int groupId){
         m_currentGroupId = groupId;
         m_content->setGroupId(groupId);
-    });
-    connect(m_nav, &GroupNavWidget::addGroupRequested, [this](){
+    }, Qt::UniqueConnection);
+
+    connect(m_nav, &GroupNavWidget::addGroupRequested, this, [this]{
         // 获取所有分组名（排除“未分组”）
         QSet<int> usedNums;
         const QString prefix = QStringLiteral("分组");
@@ -38,11 +39,12 @@ GroupSettingWidget::GroupSettingWidget(QWidget *parent)
         int idx = 1;
         while (usedNums.contains(idx)) ++idx;
         QString name = prefix + QString::number(idx);
-
         DataManager::instance().addGroup(name);
-    });
-    connect(m_nav, &GroupNavWidget::deleteGroupRequested, [this](int groupId){
-        if (QMessageBox::question(this, QStringLiteral("确认"), QStringLiteral("确定要删除该分组吗？")) == QMessageBox::Yes) {
+    }, Qt::UniqueConnection);
+
+    connect(m_nav, &GroupNavWidget::deleteGroupRequested, this, [this](int groupId){
+        if (groupId == DataManager::UNGROUPED_ID) return;
+        {
             // 判断当前选中项是否为要删除的分组
             bool isDeletingCurrent = (m_currentGroupId == groupId);
             DataManager::instance().removeGroup(groupId);
@@ -50,21 +52,20 @@ GroupSettingWidget::GroupSettingWidget(QWidget *parent)
             if (isDeletingCurrent) {
                 // 删除的是当前选中分组：选中"未分组"，刷新内容
                 m_currentGroupId = DataManager::UNGROUPED_ID;
-//                m_nav->setSelectedGroupId(m_currentGroupId);
                 m_content->setGroupId(m_currentGroupId);
             }
-            // 如果不是当前选中分组，不用处理，数据自动刷新
         }
-    });
+    }, Qt::UniqueConnection);
 
-    connect(m_content, &GroupContentWidget::removeMembersFromGroup, [this](const QSet<int>& ids){
+    connect(m_content, &GroupContentWidget::addMembersToGroup, this, [this](const QSet<int>& ids, int groupId){
+            for (int id : ids)
+                DataManager::instance().assignMemberToGroup(id, groupId);
+    }, Qt::UniqueConnection);
+
+    connect(m_content, &GroupContentWidget::removeMembersFromGroup, this, [this](const QSet<int>& ids, int){
         for (int id : ids)
             DataManager::instance().assignMemberToGroup(id, DataManager::UNGROUPED_ID); // 1为未分组
-    });
-    connect(m_content, &GroupContentWidget::addMembersToGroup, [this](const QSet<int>& ids){
-        for (int id : ids)
-            DataManager::instance().assignMemberToGroup(id, m_currentGroupId);
-    });
+    }, Qt::UniqueConnection);
 
     m_content->setGroupId(m_currentGroupId);
 }

@@ -30,7 +30,6 @@ GroupNavWidget::GroupNavWidget(QWidget *parent)
     m_label = new QLabel(this);
     m_label->setAlignment(Qt::AlignLeft);
     m_label->setFixedHeight(40);
-//    m_label->hide();
 
     QHBoxLayout *btnLayout = new QHBoxLayout(m_btnArea);
     btnLayout->setContentsMargins(0, 0, 24, 8);
@@ -52,15 +51,15 @@ GroupNavWidget::GroupNavWidget(QWidget *parent)
     m_addBtn->setStyleSheet("background-color: #3D8BFF; color: #FFFFFF; font-size: 18px; border-radius: 16px;");
     m_label->setStyleSheet("background-color: #141414; color: #FFFFFF; font-size: 18px;");
 
-    connect(m_listView->selectionModel(), &QItemSelectionModel::currentChanged, [this](const QModelIndex& idx){
+    connect(m_listView->selectionModel(), &QItemSelectionModel::currentChanged, this, [this](const QModelIndex& idx){
         if (idx.isValid()) emit groupSelected(m_model->groupIdAt(idx.row()));
-    });
-    connect(m_addBtn, &QPushButton::clicked, [this]{
+    }, Qt::UniqueConnection);
+    connect(m_addBtn, &QPushButton::clicked, this, [this]{
         emit addGroupRequested();
-    });
-    connect(delegate, &GroupNavDelegate::deleteClicked, [this](int row){
+    }, Qt::UniqueConnection);
+    connect(delegate, &GroupNavDelegate::deleteClicked, this, [this](int row){
         emit deleteGroupRequested(m_model->groupIdAt(row));
-    });
+    }, Qt::UniqueConnection);
 
     m_listView->setCurrentIndex(m_model->index(0, 0));
 }

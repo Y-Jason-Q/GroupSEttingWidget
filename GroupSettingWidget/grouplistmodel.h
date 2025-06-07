@@ -3,7 +3,7 @@
 
 #include <QAbstractListModel>
 #include <QVector>
-#include "datamanager.h"
+#include "../../DataManager/datamanager.h"
 
 struct GroupItemData {
     QString name;
